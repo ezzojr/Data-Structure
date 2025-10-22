@@ -1,17 +1,16 @@
 ﻿#include <iostream>
-#include <chrono>
-#include <iomanip>
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <chrono>
+#include <iomanip>
 #include <cctype>
 
-// Include Linked List implementation
+// Include both implementations
+#include "array_team/ArrayImpl.hpp"
 #include "linkedlist_team/JobLinkedList.hpp"
 #include "linkedlist_team/ResumeLinkedList.hpp"
 #include "linkedlist_team/MatchingEngine.hpp"
-
-#include "shared/CSVReader.hpp"
 
 using namespace std;
 using namespace chrono;
@@ -25,18 +24,30 @@ void performMatching_LL(JobLinkedList& jobList, ResumeLinkedList& resumeList, Ma
 void displayTopMatches_LL(const MatchArray& matches, int top, JobLinkedList& jobList, ResumeLinkedList& resumeList);
 void displayMenu_LL();
 void displayPerformanceMetrics_LL(long long loadTime, int dataSize);
+void displayMainMenu();
+void comparePerformance(ArrayPerf arrayPerf, long long llLoadTime, long long llMatchTime, int llJobs, int llResumes);
 
 // Common tech skills to look for
 const string COMMON_SKILLS[] = {
     "C++", "Python", "Java", "JavaScript", "SQL", "HTML", "CSS",
     "React", "Node.js", "MongoDB", "MySQL", "PostgreSQL",
-    "Git", "Docker", "Kubernetes", "AWS", "Azure",
-    "Machine Learning", "Deep Learning", "NLP", "Pandas",
-    "Excel", "Power BI", "Tableau", "Data Analysis",
+    "Git", "Docker", "Kubernetes", "AWS", "Azure", "GCP",
+    "Machine Learning", "Deep Learning", "NLP", "Pandas", "NumPy",
+    "Excel", "Power BI", "Tableau", "Data Analysis", "Data Cleaning",
     "Statistics", "TensorFlow", "PyTorch", "REST API",
-    "Spring", "Django", "Flask", "Angular", "Vue.js"
+    "Spring", "Django", "Flask", "Angular", "Vue.js",
+    "System Design", "MLOps", "Keras", "Computer Vision",
+    "Stakeholder Management", "User Stories", "Product Roadmap",
+    "Agile", "Scrum", "Reporting", "BI", "ETL", "Data Warehouse",
+    "Leadership", "Communication", "Problem Solving", "Teamwork"
 };
-const int SKILLS_COUNT = 33;
+const int SKILLS_COUNT = 52;
+
+// Global variables for performance tracking
+long long g_llLoadTime = 0;
+long long g_llMatchTime = 0;
+int g_llJobs = 0;
+int g_llResumes = 0;
 
 int main() {
     cout << "\n===============================================" << endl;
@@ -44,49 +55,73 @@ int main() {
     cout << "         Asia Pacific University" << endl;
     cout << "===============================================\n" << endl;
     
+    ArrayPerf arrayPerf;
+    bool arrayRan = false;
+    bool linkedListRan = false;
+    
     int choice;
     bool running = true;
     
     while (running) {
-        cout << "\n===============================================" << endl;
-        cout << "     SELECT DATA STRUCTURE IMPLEMENTATION" << endl;
-        cout << "===============================================" << endl;
-        cout << "  1. Linked List Implementation" << endl;
-        cout << "  2. Array Implementation (Coming Soon)" << endl;
-        cout << "  3. Compare Both Implementations" << endl;
-        cout << "  0. Exit" << endl;
-        cout << "===============================================" << endl;
-        
-        cout << "\nEnter your choice: ";
+        displayMainMenu();
+        cout << "Enter your choice: ";
         cin >> choice;
         
         switch (choice) {
-            case 1:
+            case 1: {
+                cout << "\n>>> Running Array Implementation...\n" << endl;
+                arrayPerf = runArrayImplementation("data/job_description.csv", 
+                                                  "data/resume.csv");
+                arrayRan = true;
+                break;
+            }
+            
+            case 2: {
                 cout << "\n>>> Running Linked List Implementation...\n" << endl;
                 runLinkedListImplementation();
+                linkedListRan = true;
                 break;
-                
-            case 2:
-                cout << "\n>>> Array Implementation - Coming Soon!" << endl;
-                cout << "This will be implemented by Team Member 1 & 2.\n" << endl;
+            }
+            
+            case 3: {
+                if (!arrayRan && !linkedListRan) {
+                    cout << "\nPlease run at least one implementation first!" << endl;
+                } else {
+                    cout << "\n>>> Performance Comparison\n" << endl;
+                    comparePerformance(arrayPerf, g_llLoadTime, g_llMatchTime, g_llJobs, g_llResumes);
+                }
                 break;
-                
-            case 3:
-                cout << "\n>>> Performance Comparison - Coming Soon!" << endl;
-                cout << "This will compare both implementations.\n" << endl;
-                break;
-                
-            case 0:
+            }
+            
+            case 0: {
                 cout << "\nThank you for using the Job Matching System!" << endl;
                 running = false;
                 break;
-                
+            }
+            
             default:
                 cout << "\nInvalid choice! Please try again." << endl;
+        }
+        
+        if (running) {
+            cout << "\nPress Enter to continue...";
+            cin.ignore();
+            cin.get();
         }
     }
     
     return 0;
+}
+
+void displayMainMenu() {
+    cout << "\n===============================================" << endl;
+    cout << "     SELECT DATA STRUCTURE IMPLEMENTATION" << endl;
+    cout << "===============================================" << endl;
+    cout << "  1. Array Implementation" << endl;
+    cout << "  2. Linked List Implementation" << endl;
+    cout << "  3. Compare Both Implementations" << endl;
+    cout << "  0. Exit" << endl;
+    cout << "===============================================" << endl;
 }
 
 void runLinkedListImplementation() {
@@ -101,15 +136,18 @@ void runLinkedListImplementation() {
     auto startLoad = high_resolution_clock::now();
     
     cout << "Loading data from CSV files..." << endl;
-    loadJobsFromCSV_LL("../data/job_description.csv", jobList);
-    loadResumesFromCSV_LL("../data/resume.csv", resumeList);
+    loadJobsFromCSV_LL("data/job_description.csv", jobList);
+    loadResumesFromCSV_LL("data/resume.csv", resumeList);
     
     auto endLoad = high_resolution_clock::now();
-    long long loadTime = duration_cast<microseconds>(endLoad - startLoad).count();
+    g_llLoadTime = duration_cast<microseconds>(endLoad - startLoad).count();
     
-    cout << "Jobs loaded: " << jobList.getSize() << endl;
-    cout << "Resumes loaded: " << resumeList.getSize() << endl;
-    cout << "Load time: " << loadTime << " microseconds\n" << endl;
+    g_llJobs = jobList.getSize();
+    g_llResumes = resumeList.getSize();
+    
+    cout << "\nJobs loaded: " << g_llJobs << endl;
+    cout << "Resumes loaded: " << g_llResumes << endl;
+    cout << "Load time: " << fixed << setprecision(2) << (g_llLoadTime/1000.0) << " ms\n" << endl;
     
     int choice;
     bool running = true;
@@ -198,16 +236,29 @@ void runLinkedListImplementation() {
             
             case 7: {
                 cout << "\nPerforming job matching analysis..." << endl;
+                cout << "This will compare " << g_llResumes << " resumes with " << g_llJobs << " jobs...\n" << endl;
                 matches.clear();
                 
                 auto startMatch = high_resolution_clock::now();
                 performMatching_LL(jobList, resumeList, matches);
                 auto endMatch = high_resolution_clock::now();
-                long long matchTime = duration_cast<microseconds>(endMatch - startMatch).count();
+                g_llMatchTime = duration_cast<microseconds>(endMatch - startMatch).count();
                 
-                cout << "Matching complete!" << endl;
+                cout << "\nMatching complete!" << endl;
                 cout << "Total matches found: " << matches.size << endl;
-                cout << "Matching time: " << matchTime << " microseconds\n" << endl;
+                cout << "Matching time: " << fixed << setprecision(2) << (g_llMatchTime/1000.0) << " ms" << endl;
+                
+                // Save to CSV
+                ofstream csv("matches_linkedlist.csv");
+                csv << "JobID,ResumeID,Score,MatchedSkills\n";
+                for (int i = 0; i < matches.size; i++) {
+                    csv << matches.matches[i].getJobId() << ","
+                        << matches.matches[i].getResumeId() << ","
+                        << fixed << setprecision(2) << matches.matches[i].getScore() << ","
+                        << matches.matches[i].getMatchingSkills() << "\n";
+                }
+                csv.close();
+                cout << "Results saved to: matches_linkedlist.csv\n" << endl;
                 break;
             }
             
@@ -282,7 +333,7 @@ void runLinkedListImplementation() {
             case 11: {
                 cout << "\nPerformance Metrics - Linked List" << endl;
                 cout << "===============================================" << endl;
-                displayPerformanceMetrics_LL(loadTime, jobList.getSize() + resumeList.getSize());
+                displayPerformanceMetrics_LL(g_llLoadTime, g_llJobs + g_llResumes);
                 break;
             }
             
@@ -312,39 +363,53 @@ void loadJobsFromCSV_LL(const char* filename, JobLinkedList& jobList) {
     }
     
     string line;
-    // Skip header row
-    getline(file, line);
+    getline(file, line); // Skip header
     
     int id = 1;
-    int loaded = 0;
+    int count = 0;
     
-    while (getline(file, line) && loaded < 100) {
-        if (line.empty() || line.length() < 20) continue;
+    cout << "Loading jobs: ";
+    
+    while (getline(file, line)) {
+        if (line.empty()) continue;
         
-        // Remove quotes if present
-        if (line.front() == '"') line = line.substr(1);
-        if (line.back() == '"') line.pop_back();
+        // Clean the line
+        while (!line.empty() && (line.front() == '"' || line.front() == ' ')) {
+            line = line.substr(1);
+        }
+        while (!line.empty() && (line.back() == '"' || line.back() == '\r' || 
+                                 line.back() == '\n' || line.back() == ' ')) {
+            line.pop_back();
+        }
         
-        // Extract job title from description
+        if (line.length() < 20) continue;
+        
+        // Progress indicator
+        if (count % 50 == 0) {
+            cout << ".";
+            cout.flush();
+        }
+        
+        // Extract title
         string title = "Position";
         size_t neededPos = line.find(" needed");
         size_t requiredPos = line.find(" required");
         
-        if (neededPos != string::npos && neededPos > 0) {
+        if (neededPos != string::npos && neededPos > 0 && neededPos < 100) {
             title = line.substr(0, neededPos);
-        } else if (requiredPos != string::npos && requiredPos > 0) {
+        } else if (requiredPos != string::npos && requiredPos > 0 && requiredPos < 100) {
             title = line.substr(0, requiredPos);
         }
         
-        // Create job with actual data
         Job job(id, title, "Tech Company", line, 3);
         extractSkills(line, &job, nullptr);
         
         jobList.insert(job);
         id++;
-        loaded++;
+        count++;
     }
     
+    cout << " Done!" << endl;
     file.close();
 }
 
@@ -356,38 +421,45 @@ void loadResumesFromCSV_LL(const char* filename, ResumeLinkedList& resumeList) {
     }
     
     string line;
-    // Skip header row
-    getline(file, line);
+    getline(file, line); // Skip header
     
     int id = 101;
-    int loaded = 0;
+    int count = 0;
     
-    while (getline(file, line) && loaded < 100) {
-        if (line.empty() || line.length() < 20) continue;
+    cout << "Loading resumes: ";
+    
+    while (getline(file, line)) {
+        if (line.empty()) continue;
         
-        // Remove quotes if present
-        if (line.front() == '"') line = line.substr(1);
-        if (line.back() == '"') line.pop_back();
+        // Clean the line
+        while (!line.empty() && (line.front() == '"' || line.front() == ' ')) {
+            line = line.substr(1);
+        }
+        while (!line.empty() && (line.back() == '"' || line.back() == '\r' || 
+                                 line.back() == '\n' || line.back() == ' ')) {
+            line.pop_back();
+        }
         
-        // Generate unique candidate name
-        stringstream nameStream;
-        nameStream << "Candidate_" << id;
-        string candidateName = nameStream.str();
+        if (line.length() < 20) continue;
         
-        // Generate unique email
-        stringstream emailStream;
-        emailStream << "candidate" << id << "@email.com";
-        string email = emailStream.str();
+        // Progress indicator
+        if (count % 50 == 0) {
+            cout << ".";
+            cout.flush();
+        }
         
-        // Create resume with actual data
+        string candidateName = "Candidate_" + to_string(id);
+        string email = "candidate" + to_string(id) + "@email.com";
+        
         Resume resume(id, candidateName, email, line, 2);
         extractSkills(line, nullptr, &resume);
         
         resumeList.insert(resume);
         id++;
-        loaded++;
+        count++;
     }
     
+    cout << " Done!" << endl;
     file.close();
 }
 
@@ -413,10 +485,25 @@ void extractSkills(const string& text, Job* job, Resume* resume) {
     }
 }
 
+// OPTIMIZED: Added progress indicator
 void performMatching_LL(JobLinkedList& jobList, ResumeLinkedList& resumeList, MatchArray& matches) {
+    int totalJobs = jobList.getSize();
+    int totalResumes = resumeList.getSize();
+    int processedJobs = 0;
+    int progressStep = totalJobs / 10;
+    if (progressStep == 0) progressStep = 1;
+    
+    cout << "Matching progress: ";
+    
     JobNode* jobCurrent = jobList.getHead();
     
     while (jobCurrent != nullptr) {
+        // Show progress
+        if (processedJobs % progressStep == 0) {
+            cout << (processedJobs * 100 / totalJobs) << "% ";
+            cout.flush();
+        }
+        
         ResumeNode* resumeCurrent = resumeList.getHead();
         
         while (resumeCurrent != nullptr) {
@@ -429,7 +516,10 @@ void performMatching_LL(JobLinkedList& jobList, ResumeLinkedList& resumeList, Ma
         }
         
         jobCurrent = jobCurrent->next;
+        processedJobs++;
     }
+    
+    cout << "100% Done!" << endl;
 }
 
 void displayTopMatches_LL(const MatchArray& matches, int top, JobLinkedList& jobList, ResumeLinkedList& resumeList) {
@@ -443,6 +533,7 @@ void displayTopMatches_LL(const MatchArray& matches, int top, JobLinkedList& job
         sortedMatches[i] = matches.matches[i];
     }
     
+    // Bubble sort by score
     for (int i = 0; i < matches.size - 1; i++) {
         for (int j = i + 1; j < matches.size; j++) {
             if (sortedMatches[j].getScore() > sortedMatches[i].getScore()) {
@@ -508,8 +599,9 @@ void displayPerformanceMetrics_LL(long long loadTime, int dataSize) {
     cout << "Search             | O(n)        | O(1)" << endl;
     cout << "Delete             | O(n)        | O(1)" << endl;
     cout << "Sort (Bubble)      | O(n^2)      | O(1)" << endl;
-    cout << "Matching           | O(n*m)      | O(1)" << endl;
+    cout << "Matching (Optimized) | O(n*m*k)  | O(1)" << endl;
     cout << "-----------------------------------------------" << endl;
+    cout << "where k = average skills per entity (~10-15)" << endl;
     
     cout << "\nADVANTAGES OF LINKED LIST:" << endl;
     cout << "  - Dynamic size (no fixed capacity)" << endl;
@@ -523,4 +615,260 @@ void displayPerformanceMetrics_LL(long long loadTime, int dataSize) {
     cout << "  - No random access" << endl;
     cout << "  - Cache performance issues" << endl;
     cout << "===============================================\n" << endl;
+}
+
+void comparePerformance(ArrayPerf arrayPerf, long long llLoadTime, long long llMatchTime, int llJobs, int llResumes) {
+    cout << "\n===============================================" << endl;
+    cout << "         PERFORMANCE COMPARISON" << endl;
+    cout << "===============================================\n" << endl;
+    
+    // Check what data is available
+    bool hasArrayData = (arrayPerf.jobs > 0);
+    bool hasLLData = (llJobs > 0);
+    bool hasArrayMatching = (arrayPerf.match_us > 0);
+    bool hasLLMatching = (llMatchTime > 0);
+    
+    if (!hasArrayData && !hasLLData) {
+        cout << "No performance data available!" << endl;
+        cout << "Please run both implementations first:\n" << endl;
+        cout << "1. Select option 1 (Array Implementation)" << endl;
+        cout << "2. Run option 7 to perform matching" << endl;
+        cout << "3. Return to main menu (option 0)" << endl;
+        cout << "4. Select option 2 (Linked List Implementation)" << endl;
+        cout << "5. Run option 7 to perform matching" << endl;
+        cout << "6. Return to main menu (option 0)" << endl;
+        cout << "7. Select option 3 to compare" << endl;
+        return;
+    }
+    
+    // Display side-by-side comparison table
+    cout << "================================================================" << endl;
+    cout << left << setw(30) << "METRIC" 
+         << setw(20) << "ARRAY" 
+         << setw(20) << "LINKED LIST" << endl;
+    cout << "================================================================" << endl;
+    
+    // Data Size
+    cout << left << setw(30) << "Jobs Loaded";
+    if (hasArrayData) {
+        cout << setw(20) << arrayPerf.jobs;
+    } else {
+        cout << setw(20) << "Not Run";
+    }
+    if (hasLLData) {
+        cout << setw(20) << llJobs;
+    } else {
+        cout << setw(20) << "Not Run";
+    }
+    cout << endl;
+    
+    cout << left << setw(30) << "Resumes Loaded";
+    if (hasArrayData) {
+        cout << setw(20) << arrayPerf.resumes;
+    } else {
+        cout << setw(20) << "Not Run";
+    }
+    if (hasLLData) {
+        cout << setw(20) << llResumes;
+    } else {
+        cout << setw(20) << "Not Run";
+    }
+    cout << endl;
+    
+    cout << "----------------------------------------------------------------" << endl;
+    
+    // Loading Time
+    cout << left << setw(30) << "Loading Time (ms)";
+    if (hasArrayData) {
+        cout << setw(20) << fixed << setprecision(2) << (arrayPerf.load_us / 1000.0);
+    } else {
+        cout << setw(20) << "Not Run";
+    }
+    if (hasLLData) {
+        cout << setw(20) << fixed << setprecision(2) << (llLoadTime / 1000.0);
+    } else {
+        cout << setw(20) << "Not Run";
+    }
+    cout << endl;
+    
+    // Matching Time
+    cout << left << setw(30) << "Matching Time (ms)";
+    if (hasArrayMatching) {
+        cout << setw(20) << fixed << setprecision(2) << (arrayPerf.match_us / 1000.0);
+    } else if (hasArrayData) {
+        cout << setw(20) << "Run Option 7";
+    } else {
+        cout << setw(20) << "Not Run";
+    }
+    if (hasLLMatching) {
+        cout << setw(20) << fixed << setprecision(2) << (llMatchTime / 1000.0);
+    } else if (hasLLData) {
+        cout << setw(20) << "Run Option 7";
+    } else {
+        cout << setw(20) << "Not Run";
+    }
+    cout << endl;
+    
+    // Total Time
+    cout << left << setw(30) << "Total Time (ms)";
+    if (hasArrayMatching) {
+        double totalArray = (arrayPerf.load_us + arrayPerf.match_us) / 1000.0;
+        cout << setw(20) << fixed << setprecision(2) << totalArray;
+    } else if (hasArrayData) {
+        cout << setw(20) << "Incomplete";
+    } else {
+        cout << setw(20) << "Not Run";
+    }
+    if (hasLLMatching) {
+        double totalLL = (llLoadTime + llMatchTime) / 1000.0;
+        cout << setw(20) << fixed << setprecision(2) << totalLL;
+    } else if (hasLLData) {
+        cout << setw(20) << "Incomplete";
+    } else {
+        cout << setw(20) << "Not Run";
+    }
+    cout << endl;
+    
+    cout << "================================================================\n" << endl;
+    
+    // Performance Analysis
+    if (hasArrayData && hasLLData) {
+        cout << "SPEED COMPARISON:" << endl;
+        cout << "----------------------------------------------------------------" << endl;
+        
+        // Loading comparison
+        if (arrayPerf.load_us > 0 && llLoadTime > 0) {
+            double loadRatio = (double)arrayPerf.load_us / llLoadTime;
+            cout << "Loading: ";
+            if (loadRatio > 1.05) {
+                cout << "Linked List is " << fixed << setprecision(1) 
+                     << ((loadRatio - 1) * 100) << "% faster";
+            } else if (loadRatio < 0.95) {
+                cout << "Array is " << fixed << setprecision(1) 
+                     << ((1.0/loadRatio - 1) * 100) << "% faster";
+            } else {
+                cout << "Both are approximately equal";
+            }
+            cout << endl;
+        }
+        
+        // Matching comparison
+        if (hasArrayMatching && hasLLMatching) {
+            double matchRatio = (double)arrayPerf.match_us / llMatchTime;
+            cout << "Matching: ";
+            if (matchRatio > 1.05) {
+                cout << "Linked List is " << fixed << setprecision(1) 
+                     << ((matchRatio - 1) * 100) << "% faster";
+            } else if (matchRatio < 0.95) {
+                cout << "Array is " << fixed << setprecision(1) 
+                     << ((1.0/matchRatio - 1) * 100) << "% faster";
+            } else {
+                cout << "Both are approximately equal";
+            }
+            cout << endl;
+        } else {
+            cout << "Matching: Run option 7 in both implementations to compare" << endl;
+        }
+        
+        // Overall comparison
+        if (hasArrayMatching && hasLLMatching) {
+            double totalArray = arrayPerf.load_us + arrayPerf.match_us;
+            double totalLL = llLoadTime + llMatchTime;
+            double totalRatio = totalArray / totalLL;
+            
+            cout << "Overall: ";
+            if (totalRatio > 1.05) {
+                cout << "Linked List is " << fixed << setprecision(1) 
+                     << ((totalRatio - 1) * 100) << "% faster overall";
+            } else if (totalRatio < 0.95) {
+                cout << "Array is " << fixed << setprecision(1) 
+                     << ((1.0/totalRatio - 1) * 100) << "% faster overall";
+            } else {
+                cout << "Both implementations have similar performance";
+            }
+            cout << endl;
+        }
+        cout << "----------------------------------------------------------------\n" << endl;
+    }
+    
+    // Algorithm Complexity Table
+    cout << "ALGORITHM COMPLEXITY COMPARISON:" << endl;
+    cout << "================================================================" << endl;
+    cout << left << setw(30) << "Operation" 
+         << setw(20) << "Array" 
+         << setw(20) << "Linked List" << endl;
+    cout << "================================================================" << endl;
+    cout << left << setw(30) << "Insert at End"
+         << setw(20) << "O(1)*" 
+         << setw(20) << "O(1)" << endl;
+    cout << left << setw(30) << "Insert at Beginning"
+         << setw(20) << "O(n)" 
+         << setw(20) << "O(1)" << endl;
+    cout << left << setw(30) << "Search by ID"
+         << setw(20) << "O(n)" 
+         << setw(20) << "O(n)" << endl;
+    cout << left << setw(30) << "Delete"
+         << setw(20) << "O(n)" 
+         << setw(20) << "O(n)" << endl;
+    cout << left << setw(30) << "Sort (Bubble)"
+         << setw(20) << "O(n²)" 
+         << setw(20) << "O(n²)" << endl;
+    cout << left << setw(30) << "Access by Index"
+         << setw(20) << "O(1)" 
+         << setw(20) << "O(n)" << endl;
+    cout << left << setw(30) << "Matching (Optimized)"
+         << setw(20) << "O(n*m*k)" 
+         << setw(20) << "O(n*m*k)" << endl;
+    cout << left << setw(30) << "Memory Overhead"
+         << setw(20) << "Lower" 
+         << setw(20) << "Higher" << endl;
+    cout << "================================================================" << endl;
+    cout << "*O(1) amortized; O(n) when resizing needed" << endl;
+    cout << "k = average number of skills per entity\n" << endl;
+    
+    // Memory Analysis
+    cout << "MEMORY COMPARISON:" << endl;
+    cout << "----------------------------------------------------------------" << endl;
+    cout << "Array Implementation:" << endl;
+    cout << "  - Contiguous memory allocation" << endl;
+    cout << "  - Better cache locality" << endl;
+    cout << "  - Fixed overhead per element" << endl;
+    cout << "  - May waste space if not full" << endl;
+    cout << "\nLinked List Implementation:" << endl;
+    cout << "  - Scattered memory allocation" << endl;
+    cout << "  - Pointer overhead (8 bytes per node)" << endl;
+    cout << "  - No wasted space for unused capacity" << endl;
+    cout << "  - Dynamic memory allocation" << endl;
+    cout << "================================================================\n" << endl;
+    
+    // Recommendations
+    cout << "RECOMMENDATIONS:" << endl;
+    cout << "----------------------------------------------------------------" << endl;
+    cout << "Use Array when:" << endl;
+    cout << "  - Need fast random access by index" << endl;
+    cout << "  - Data size is known or predictable" << endl;
+    cout << "  - Memory locality is important" << endl;
+    cout << "  - Frequent lookups/reads" << endl;
+    cout << "\nUse Linked List when:" << endl;
+    cout << "  - Frequent insertions at beginning" << endl;
+    cout << "  - Unknown or highly variable data size" << endl;
+    cout << "  - Need true dynamic sizing" << endl;
+    cout << "  - Memory fragmentation is acceptable" << endl;
+    cout << "================================================================\n" << endl;
+    
+    // Show what's missing
+    if (!hasArrayData || !hasLLData || !hasArrayMatching || !hasLLMatching) {
+        cout << "NOTE: For complete comparison, please:" << endl;
+        if (!hasArrayData) {
+            cout << "  - Run Array Implementation (Option 1)" << endl;
+        } else if (!hasArrayMatching) {
+            cout << "  - Run matching in Array Implementation (Option 1 > 7)" << endl;
+        }
+        if (!hasLLData) {
+            cout << "  - Run Linked List Implementation (Option 2)" << endl;
+        } else if (!hasLLMatching) {
+            cout << "  - Run matching in Linked List Implementation (Option 2 > 7)" << endl;
+        }
+        cout << endl;
+    }
 }
