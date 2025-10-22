@@ -67,23 +67,23 @@ double MatchingEngine::calculateExperienceScore(const Job& job, const Resume& re
 
 // Display detailed match information
 void MatchingEngine::displayMatchDetails(const Job& job, const Resume& resume, double score) {
-    std::cout << "\n╔════════════════════════════════════════════════════════════╗" << std::endl;
-    std::cout << "║              DETAILED MATCH ANALYSIS                       ║" << std::endl;
-    std::cout << "╚════════════════════════════════════════════════════════════╝" << std::endl;
+    std::cout << "\n============================================================" << std::endl;
+    std::cout << "              DETAILED MATCH ANALYSIS                       " << std::endl;
+    std::cout << "============================================================" << std::endl;
     
-    std::cout << "\n📋 JOB DETAILS:" << std::endl;
+    std::cout << "\nJOB DETAILS:" << std::endl;
     std::cout << "   ID: " << job.getId() << std::endl;
     std::cout << "   Title: " << job.getTitle() << std::endl;
     std::cout << "   Company: " << job.getCompany() << std::endl;
     std::cout << "   Experience Required: " << job.getExperienceRequired() << " years" << std::endl;
     
-    std::cout << "\n👤 CANDIDATE DETAILS:" << std::endl;
+    std::cout << "\nCANDIDATE DETAILS:" << std::endl;
     std::cout << "   ID: " << resume.getId() << std::endl;
     std::cout << "   Name: " << resume.getName() << std::endl;
     std::cout << "   Experience: " << resume.getYearsOfExperience() << " years" << std::endl;
     
     int matchingSkills = countMatchingSkills(job, resume);
-    std::cout << "\n🎯 SKILL MATCHING:" << std::endl;
+    std::cout << "\nSKILL MATCHING:" << std::endl;
     std::cout << "   Required Skills: " << job.getSkillCount() << std::endl;
     std::cout << "   Matching Skills: " << matchingSkills << std::endl;
     std::cout << "   Skills Match Rate: " << std::fixed << std::setprecision(1) 
@@ -105,17 +105,17 @@ void MatchingEngine::displayMatchDetails(const Job& job, const Resume& resume, d
     }
     
     double expScore = calculateExperienceScore(job, resume);
-    std::cout << "\n💼 EXPERIENCE ANALYSIS:" << std::endl;
+    std::cout << "\nEXPERIENCE ANALYSIS:" << std::endl;
     std::cout << "   Experience Score: " << std::fixed << std::setprecision(1) 
               << expScore << "/100" << std::endl;
     std::cout << "   Requirement Status: " 
-              << (meetsExperienceRequirement(job, resume) ? "✓ MEETS" : "✗ BELOW") 
+              << (meetsExperienceRequirement(job, resume) ? "[MEETS]" : "[BELOW]") 
               << std::endl;
     
-    std::cout << "\n⭐ OVERALL MATCH SCORE: " << std::fixed << std::setprecision(2) 
+    std::cout << "\nOVERALL MATCH SCORE: " << std::fixed << std::setprecision(2) 
               << score << "/100" << std::endl;
     
-    std::cout << "\n📊 RECOMMENDATION: ";
+    std::cout << "\nRECOMMENDATION: ";
     if (score >= 80) {
         std::cout << "EXCELLENT MATCH - Highly Recommended" << std::endl;
     } else if (score >= 60) {
@@ -126,5 +126,5 @@ void MatchingEngine::displayMatchDetails(const Job& job, const Resume& resume, d
         std::cout << "LOW MATCH - Not Recommended" << std::endl;
     }
     
-    std::cout << "\n────────────────────────────────────────────────────────────\n" << std::endl;
+    std::cout << "\n------------------------------------------------------------\n" << std::endl;
 }
